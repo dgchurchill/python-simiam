@@ -36,7 +36,17 @@ class AppWindow(object):
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
         self._simulator = Simulator(world, timedelta(milliseconds=10))
+
+    def _update(self):
         self._simulator.step()
+
+        for robot in self._simulator._world.robots:
+            for surface in robot.get_surfaces():
+                scaled_geom = [(200*x[0], 200*x[1]) for x in surface[0].geometry]
+                self._view.create_polygon(scaled_geom, fill=surface[1])
+
+        if self._is_playing:
+            self._root.after(1, self._update)
 
     def _create_layout(self):
         self._root = tk.Tk()
@@ -174,16 +184,15 @@ class AppWindow(object):
 
         self._set_time(timedelta(0))
 
-#             obj.simulator_.start();
+        self._update();
 
     def _on_play(self):
         self._is_playing = not self._is_playing
         if self._is_playing:
             self._buttons['play'].config(image=self._get_image('ui_control_pause.png'))
-            #self._simulator.start()
+            self._update()
         else:
             self._buttons['play'].config(image=self._get_image('ui_control_play.png'))
-            #self._simulator.stop()
 
     def _on_reset(self):
         pass

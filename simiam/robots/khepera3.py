@@ -3,15 +3,16 @@ from math import radians, floor
 from robot import Robot
 from sensor import WheelEncoder, ProximitySensor
 from dynamics import DifferentialDrive
-from ..geometry import Pose2D
+from ..geometry import Pose2D, Surface2D
 
 class Khepera3(Robot):
-    def __init__(self, pose):
+    def __init__(self, initial_pose):
         # Add sensors: wheel encoders and IR proximity sensors
         self.wheel_radius = 0.021           # 42mm
         self.wheel_base_length = 0.0885     # 88.5mm
         self._ticks_per_rev = 2765
         self._speed_factor = 6.2953e-6
+        self._pose = initial_pose
         
         self.encoders = [
             WheelEncoder('right_wheel', self.wheel_radius, self.wheel_base_length, self._ticks_per_rev),
@@ -47,7 +48,7 @@ class Khepera3(Robot):
             for x in sensor_poses]
         
         # Add dynamics: two-wheel differential drive
-        self._dynamics = DifferentialDrive(self.wheel_radius, self.wheel_base_length)
+        self.dynamics = DifferentialDrive(self.wheel_radius, self.wheel_base_length)
         
         self._right_wheel_speed = 0
         self._left_wheel_speed = 0
@@ -55,7 +56,7 @@ class Khepera3(Robot):
 
     def get_surfaces(self):
         # Khepera3 in top-down 2D view
-        k3_top_plate = Surface2D(Pose2D(), [
+        k3_top_plate = Surface2D(self._pose, [
             (-0.031,   0.043),
             (-0.031,  -0.043),
             ( 0.033,  -0.043),
@@ -65,7 +66,7 @@ class Khepera3(Robot):
             ( 0.033,   0.043)
         ])
                       
-        k3_base = Surface2D(Pose2D(), [
+        k3_base = Surface2D(self._pose, [
             (-0.024,   0.064),
             ( 0.033,   0.064),
             ( 0.057,   0.043),
@@ -85,14 +86,14 @@ class Khepera3(Robot):
             (k3_top_plate, '#000000')
         ]
 
-    def update_state(self, pose, time_delta):
+    def execute(self, time_delta):
         sf = self._speed_factor
         R = self.wheel_radius
         
         vel_r = self._right_wheel_speed * (sf / R)     # mm/s
         vel_l = self._left_wheel_speed * (sf / R)      # mm/s
         
-        pose = self._dynamics.apply_dynamics(pose, time_delta, vel_r, vel_l)
+        self._pose = self.dynamics.apply_dynamics(self._pose, time_delta, vel_r, vel_l)
 
         # self._update_pose(pose)
         
@@ -114,7 +115,7 @@ class Khepera3(Robot):
 
     def _limit_speeds(self, vel_r, vel_l):
         # actuator hardware limits
-        v, w = self._dynamics.diff_to_uni(vel_r, vel_l)
+        v, w = self.dynamics.diff_to_uni(vel_r, vel_l)
         v = max(min(v, 0.314), -0.3148)
         w = max(min(w, 2.276), -2.2763)
-        return self._dynamics.uni_to_diff(v, w)
+        return self.dynamics.uni_to_diff(v, w)

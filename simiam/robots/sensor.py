@@ -11,7 +11,7 @@ class WheelEncoder(object):
         self.ticks = 0
 
     def update_ticks(self, wheel_velocity, time_delta):
-        self.ticks += self._distance_to_ticks(wheel_velocity * time_delta)
+        self.ticks += self._distance_to_ticks(wheel_velocity * time_delta.total_seconds())
 
     def reset_ticks(self):
         self.ticks = 0

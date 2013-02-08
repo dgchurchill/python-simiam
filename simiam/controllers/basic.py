@@ -16,7 +16,7 @@ class AvoidObstacles(Controller):
     def _sensor_to_distance(self, raw):
         return [(log(x / 3960) / -30) + 0.02 for x in raw]
 
-    def execute(self, robot, state_estimate, inputs, time_delta):
+    def execute(self, robot, state_estimate, time_delta, **inputs):
         # Poll the current IR sensor values 1-9
         ir_array_values = [max(x, 18) for x in robot.ir_array.get_range()]
             
@@ -46,7 +46,7 @@ class AvoidObstacles(Controller):
         v = k_v * norm_u * cos(theta_d - theta)
         w = k_w * norm_u * sin(theta_d - theta)
         
-        v = inputs.v
+        v = inputs['v']
             
 #             fprintf('(v,w) = (%0.4g,%0.4g)\n', v,w);
             
@@ -71,7 +71,7 @@ class GoToGoal(Controller):
         self._e_k = 0
         self._e_k_1 = 0
 
-    def execute(self, robot, state_estimate, inputs, time_delta):
+    def execute(self, robot, state_estimate, time_delta, **inputs):
         """
         Compute the left and right wheel speeds for go-to-goal.
 
@@ -84,8 +84,8 @@ class GoToGoal(Controller):
         """
         
         # Retrieve the (relative) goal location
-        x_g = inputs.x_g
-        y_g = inputs.y_g
+        x_g = inputs['x_g']
+        y_g = inputs['y_g']
             
         # Get estimate of current pose
         x = state_estimate.x
@@ -93,7 +93,7 @@ class GoToGoal(Controller):
         theta = state_estimate.theta
             
         # Compute the v,w that will get you to the goal
-        v = inputs.v
+        v = inputs['v']
         
         # desired (goal) heading
         dx = x_g - x
@@ -105,11 +105,12 @@ class GoToGoal(Controller):
         e_k = theta_d - theta
         e_k = atan2(sin(e_k), cos(e_k))
         
+        dt = time_delta.total_seconds()
         # PID for heading
-        w = self._k_p * e_k + self._k_i * (self._e_k + e_k * time_delta) + self._k_d * (e_k - self._e_k_1) / time_delta
+        w = self._k_p * e_k + self._k_i * (self._e_k + e_k * dt) + self._k_d * (e_k - self._e_k_1) / dt
         
         # save errors
-        self._e_k += e_k * time_delta
+        self._e_k += e_k * dt
         self._e_k_1 = e_k
         
         # stop when sufficiently close

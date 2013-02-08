@@ -15,6 +15,7 @@ class World(object):
     def __init__(self):
         self.application = None
         self.robots = []
+        self.controllers = []
         self.obstacles = []
 
     def _lookup_class(self, module, name):
@@ -49,11 +50,9 @@ class World(object):
         robot = self._lookup_class(robots, robot_type)(pose)
         controller = self._lookup_class(controllers, supervisor)()
         controller.attach_robot(robot, pose)
-        self.robots.append({
-            'robot': robot,
-            'controller': controller,
-            'pose': pose
-        })
+
+        self.robots.append(robot)
+        self.controllers.append(controller)
 
         self.application.add_controller(controller)
 
@@ -68,9 +67,12 @@ class Simulator(object):
         #self._physics = Physics(world)
 
     def step(self):
+        for controller in self._world.controllers:
+            controller.execute(self._time_step)
+
         for robot in self._world.robots:
-            robot['controller'].execute(self._time_step)
-            robot['pose'] = robot['robot'].update_state(robot['pose'], self._time_step.total_seconds())
+            robot.execute(self._time_step)
 
         self._world.application.run(self._time_step)
+
         #self._physics.apply_physics()

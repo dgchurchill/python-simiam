@@ -18,9 +18,10 @@ class DifferentialDrive(object):
         # [t,z] = ode45(@self._dynamics, [0 dt], [x_k, y_k, theta_k, v, w], options);
         # pose_t_1 = simiam.ui.Pose2D(z(end,1),z(end,2),z(end,3));
 
-        x_k_1 = pose_t.x + time_delta * (v * cos(pose_t.theta))
-        y_k_1 = pose_t.y + time_delta * (v * sin(pose_t.theta))
-        theta_k_1 = pose_t.theta + time_delta * w
+        dt = time_delta.total_seconds()
+        x_k_1 = pose_t.x + dt * (v * cos(pose_t.theta))
+        y_k_1 = pose_t.y + dt * (v * sin(pose_t.theta))
+        theta_k_1 = pose_t.theta + dt * w
         
         return Pose2D(x_k_1, y_k_1, theta_k_1)
     

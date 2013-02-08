@@ -16,4 +16,4 @@ class DemoApp(object):
             self._time += time_delta
             if self._time > self._timeout:
                 controller.goal = (-5, -5)
-                controller.set_current_controller(0)
+                #controller.set_current_controller(0)
