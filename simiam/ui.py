@@ -25,6 +25,9 @@ class AppWindow(object):
         world = World()
         world.build_from_file('settings.xml')
 
+        for obstacle in world.obstacles:
+            self._view.create_polygon(obstacle.geometry, fill='red')
+
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
         # self._simulator = Simulator(world, 0.01)
@@ -34,6 +37,37 @@ class AppWindow(object):
         self._root = tk.Tk()
         self._root.title('Sim.I.am')
         self._root.geometry('800x600')
+
+        rows = [
+            { 'minsize': 24 },
+            { 'weight': 1},
+            { 'weight': 1},
+            { 'minsize': 36 }
+        ]
+
+        columns = [
+            { 'minsize': 48 },
+            { 'minsize': 48 },
+            { 'minsize': 48 },
+
+            { 'weight': 1},
+
+            { 'minsize': 64 },
+            { 'minsize': 96 },
+            { 'minsize': 64 },
+
+            { 'weight': 1},
+
+            { 'minsize': 48 },
+            { 'minsize': 48 },
+            { 'minsize': 48 }
+        ]
+
+        for row, options in enumerate(rows):
+            self._root.rowconfigure(row, **options)
+
+        for column, options in enumerate(columns):
+            self._root.columnconfigure(column, **options)
 
         # % Create UI buttons
         # icon_file = fullfile(obj.root_, 'resources/splash/simiam_splash.png');
@@ -56,13 +90,15 @@ class AppWindow(object):
         # set(findjobj(obj.logo_), 'Border', []);
         # set(obj.logo_, 'BackgroundColor', [96 184 206]/255);
 
+        self._view = tk.Canvas(self._root, borderwidth=1, background='blue')
+        self._view.grid(row=1, column=0, rowspan=2, columnspan=11, sticky='wens')
 
         button_config = [
-            ('play', self._on_start, 'ui_control_play.png', tk.NORMAL, (4, 6)),
-            ('reset', self._on_reset, 'ui_control_reset.png', tk.DISABLED, (4, 5)),
-            ('home', self._on_home, 'ui_control_home.png', tk.DISABLED, (4, 1)),
-            ('zoom_in', self._on_zoom_in, 'ui_control_zoom_in.png', tk.DISABLED, (4, 11)),
-            ('zoom_out', self._on_zoom_out, 'ui_control_zoom_out.png', tk.DISABLED, (4, 10))
+            ('play', self._on_start, 'ui_control_play.png', tk.NORMAL, (3, 5)),
+            ('reset', self._on_reset, 'ui_control_reset.png', tk.DISABLED, (3, 4)),
+            ('home', self._on_home, 'ui_control_home.png', tk.DISABLED, (3, 0)),
+            ('zoom_in', self._on_zoom_in, 'ui_control_zoom_in.png', tk.DISABLED, (3, 10)),
+            ('zoom_out', self._on_zoom_out, 'ui_control_zoom_out.png', tk.DISABLED, (3, 9))
         ]
 
         self._buttons = {}
@@ -79,20 +115,19 @@ class AppWindow(object):
         tk.Label(
             self._root,
             image=self._get_image('ui_status_ok.png'),
-            ).grid(row=1, column=9)
+            ).grid(row=0, column=8)
 
         tk.Label(
             self._root,
             image=self._get_image('ui_status_clock.png'),
-            ).grid(row=1, column=10)
+            ).grid(row=0, column=9)
 
         self._time_label = tk.Label(self._root)
-        self._time_label.grid(row=1, column=11)
+        self._time_label.grid(row=0, column=10)
         self._set_time(timedelta(0))
 
+
     def _on_start(self):
-        self._view = tk.Canvas(self._root)
-        self._view.grid(row=2, column=1)
                           
 #             % Target Marker
 #             obj.target_marker_ = plot(obj.view_, inf, inf, ...

@@ -25,15 +25,15 @@ class Surface2D(object):
         self.set_pose(pose)
 
     def set_pose(self, pose):
-        self._geometry = pose.transform(self._original_geometry)
+        self.geometry = pose.transform(self._original_geometry)
 
-        n = len(self._geometry)
-        self._centroid = [sum(x) / n for x in zip(*self._geometry)]
+        n = len(self.geometry)
+        self._centroid = [sum(x) / n for x in zip(*self.geometry)]
 
         # twice the max distance from the centroid
-        self._geometric_span = 2 * max(sqrt((x[0] - self._centroid[0]) ** 2 + (x[1] - self._centroid[1]) ** 2) for x in self._geometry)
+        self._geometric_span = 2 * max(sqrt((x[0] - self._centroid[0]) ** 2 + (x[1] - self._centroid[1]) ** 2) for x in self.geometry)
 
-        self._edge_set = zip(self._geometry, self._geometry[1:] + [self._geometry[0]])
+        self._edge_set = zip(self.geometry, self.geometry[1:] + [self.geometry[0]])
 
     def intersection_with_surface(self, other):
         a = self._edge_set
@@ -97,7 +97,7 @@ class World(object):
     def __init__(self):
         self._application = None
         self._robots = []
-        self._obstacles = []
+        self.obstacles = []
 
     def _lookup_class(self, module, name):
         return reduce(getattr, name.split('.'), module)
@@ -140,7 +140,4 @@ class World(object):
         self._application.add_controller(controller)
 
     def add_obstacle(self, pose, geometry):
-        self._obstacles.append({
-            'obstacle': Obstacle(pose, geometry),
-            'pose': pose
-        })
+        self.obstacles.append(Obstacle(pose, geometry))
