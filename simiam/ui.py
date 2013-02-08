@@ -26,7 +26,12 @@ class AppWindow(object):
         world.build_from_file('settings.xml')
 
         for obstacle in world.obstacles:
-            self._view.create_polygon(obstacle.geometry, fill='red')
+            self._view.create_polygon(obstacle.geometry, fill='#ff6666')
+
+        self._view.scale(tk.ALL, 0, 0, 200, 200)
+        self._view.config(scrollregion=self._view.bbox(tk.ALL))
+        self._view.xview_moveto(0.5)
+        self._view.yview_moveto(0.5)
 
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
@@ -90,7 +95,7 @@ class AppWindow(object):
         # set(findjobj(obj.logo_), 'Border', []);
         # set(obj.logo_, 'BackgroundColor', [96 184 206]/255);
 
-        self._view = tk.Canvas(self._root, borderwidth=1, background='blue')
+        self._view = tk.Canvas(self._root, borderwidth=1, background='white')
         self._view.grid(row=1, column=0, rowspan=2, columnspan=11, sticky='wens')
 
         button_config = [
