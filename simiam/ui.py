@@ -2,7 +2,7 @@ import os
 import Tkinter as tk
 from PIL import Image, ImageTk
 from datetime import timedelta
-from simulator import World #, Simulator
+from simulator import World, Simulator
 
 class AppWindow(object):
     def __init__(self):
@@ -35,8 +35,8 @@ class AppWindow(object):
 
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
-        # self._simulator = Simulator(world, 0.01)
-        # self._simulator.step()
+        self._simulator = Simulator(world, timedelta(milliseconds=10))
+        self._simulator.step()
 
     def _create_layout(self):
         self._root = tk.Tk()
