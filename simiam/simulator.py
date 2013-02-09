@@ -1,5 +1,6 @@
 
 import xml.etree.ElementTree as ET
+from math import sqrt
 from geometry import Pose2D, Surface2D
 import applications
 import robots
@@ -9,6 +10,9 @@ import controllers
 class Obstacle(Surface2D):
     def __init__(self, pose, geometry):
         Surface2D.__init__(self, pose, geometry)
+
+    def get_bounds(self):
+        return self
 
 
 class World(object):
@@ -60,11 +64,89 @@ class World(object):
         self.obstacles.append(Obstacle(pose, geometry))
 
 
+class Physics(object):
+    def __init__(self, world):
+        self._world = world
+
+    def apply_physics(self):
+        if self._body_collision_detection():
+            return True
+
+        self._proximity_sensor_detection()
+        return False
+
+    def _body_collision_detection(self):
+        for robot in self._world.robots:
+            robot_bounds = robot.get_bounds()
+            
+            # check against obstacles
+            for obstacle in self._world.obstacles:
+                obstacle_bounds = obstacle.get_bounds()
+
+                if robot_bounds.precheck_surface(obstacle_bounds):
+                    points = robot_bounds.intersection_with_surface(obstacle_bounds)
+                    if len(points) > 0:
+                        print 'COLLISION!'
+                        return True
+            
+            # check against other robots
+            for other_robot in self._world.robots:
+                if other_robot == robot:
+                    continue
+
+                other_robot_bounds = other_robot.get_bounds()
+
+                if robot_bounds.precheck_surface(other_robot_bounds):
+                    points = robot_bounds.intersection_with_surface(other_robot_bounds)
+                    if len(points) > 0:
+                        print 'COLLISION!'
+                        return True
+
+        return False
+
+    def _proximity_sensor_detection(self):
+        for robot in self._world.robots:
+            for ir_sensor in robot.ir_sensors:
+                ir_bounds = ir_sensor.get_bounds()
+                d_min = ir_sensor.max_range
+                ir_sensor.update_range(d_min)
+
+                # check against obstacles
+                for obstacle in self._world.obstacles:
+                    obstacle_bounds = obstacle.get_bounds()
+                    
+                    if ir_bounds.precheck_surface(obstacle_bounds):
+                        d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, obstacle_bounds, d_min)
+
+                # check against other robots
+                for other_robot in self._world.robots:
+                    if other_robot == robot:
+                        continue
+
+                    other_robot_bounds = other_robot.get_bounds()
+                    
+                    if ir_bounds.precheck_surface(other_robot_bounds):
+                        d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, other_robot_bounds, d_min)
+                
+                if d_min < ir_sensor.max_range:
+                    ir_sensor.update_range(d_min)
+
+    def _update_proximity_sensor(self, sensor, sensor_bounds, obstacle_bounds, d_min):
+        points = sensor_bounds.intersection_with_surface(obstacle_bounds)
+        for point in points:
+#            d = norm(pt-sensor_surface.geometry_(1,1:2));
+            d = sqrt((point(0) - sensor_bounds.geometry[0][0]) ** 2 + (point[1] - sensor_bounds.geometry[0][1]) ** 2)
+            d = sensor.limit_to_sensor(d)
+            if d < d_min:
+                d_min = d
+            return d_min
+
+
 class Simulator(object):
     def __init__(self, world, time_step):
         self._time_step = time_step
         self._world = world
-        #self._physics = Physics(world)
+        self._physics = Physics(world)
 
     def step(self):
         for controller in self._world.controllers:
@@ -75,4 +157,4 @@ class Simulator(object):
 
         self._world.application.run(self._time_step)
 
-        #self._physics.apply_physics()
+        self._physics.apply_physics()

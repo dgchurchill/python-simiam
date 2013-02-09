@@ -32,8 +32,6 @@ class K3Supervisor(Supervisor):
         x_distance = self._state_estimate.x - self.goal[0]
         y_distance = self._state_estimate.y - self.goal[1]
 
-        print self.goal
-
         if sqrt(x_distance ** 2 + y_distance ** 2) > 0.02:
             outputs = self._current_controller.execute(
                 self._robot,
@@ -46,7 +44,6 @@ class K3Supervisor(Supervisor):
                 d_s=0.1)
 
             w_r, w_l = self._robot.dynamics.uni_to_diff(outputs['v'], outputs['w'])
-            print "x", w_r, w_l
             self._robot.set_wheel_speeds(w_r, w_l)
         else:
             self.reached_goal = True

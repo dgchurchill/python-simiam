@@ -37,7 +37,7 @@ class Khepera3(Robot):
             
             return ceil(3960 * exp(-30 * (distance - 0.02)))
 
-        self._ir_sensors = [
+        self.ir_sensors = [
             ProximitySensor(
                 'IR',
                 Pose2D(x[0], x[1], radians(x[2])),
@@ -53,6 +53,17 @@ class Khepera3(Robot):
         self._right_wheel_speed = 0
         self._left_wheel_speed = 0
 
+
+    def get_bounds(self):
+        return Surface2D(self._pose, [
+            (-0.031,   0.043),
+            (-0.031,  -0.043),
+            ( 0.033,  -0.043),
+            ( 0.052,  -0.021),
+            ( 0.057,       0),
+            ( 0.052,   0.021),
+            ( 0.033,   0.043)
+        ])
 
     def get_surfaces(self):
         # Khepera3 in top-down 2D view
@@ -97,7 +108,7 @@ class Khepera3(Robot):
 
         # self._update_pose(pose)
         
-        # for ir_sensor in self._ir_sensors:
+        # for ir_sensor in self.ir_sensors:
         #     ir_sensor.update_pose(pose)
         
         # update wheel encoders

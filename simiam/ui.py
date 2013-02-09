@@ -51,7 +51,7 @@ class AppWindow(object):
     def _create_layout(self):
         self._root = tk.Tk()
         self._root.title('Sim.I.am')
-        self._root.geometry('800x600')
+        self._root.geometry('800x800')
 
         rows = [
             { 'minsize': 24 },

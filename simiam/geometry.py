@@ -32,6 +32,11 @@ class Surface2D(object):
 
         self._edge_set = zip(self.geometry, self.geometry[1:] + [self.geometry[0]])
 
+    def precheck_surface(self, surface):
+#        d = norm(self._centroid_-surface_b.centroid_);
+        d = sqrt((self._centroid[0] - surface._centroid[0]) ** 2 + (self._centroid[1] - surface._centroid[1]) ** 2)
+        return d < (self._geometric_span + surface._geometric_span) / sqrt(3)
+
     def intersection_with_surface(self, other):
         a = self._edge_set
         b = other._edge_set
@@ -78,7 +83,7 @@ class Surface2D(object):
         intersect_set_y = [operator.add(*x) for x in zip(m_y_1, iy_1)]
 
         points = []
-        for i in range(u_a):
+        for i in range(len(u_a)):
             if u_a[i] >= 0 and u_a[i] <= 1 and u_b[i] >= 0 and u_b[i] <= 1:
                 points.append((intersect_set_x[i], intersect_set_y[i]))
 
