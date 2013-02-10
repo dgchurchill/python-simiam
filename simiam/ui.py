@@ -29,6 +29,8 @@ class AppWindow(object):
     def _update(self):
         self._simulator.step()
 
+        self._set_time(self._simulator.time)
+
         self._view.delete(tk.ALL)
 
         for obstacle in self._simulator._world.obstacles:
@@ -46,6 +48,10 @@ class AppWindow(object):
         # TODO: Fix scrolling
         self._view.xview_moveto(0.5)
         self._view.yview_moveto(0.5)
+
+        if self._simulator.has_crashed:
+            self._is_playing = False
+            self._status_icon.config(image=self._get_image('ui_status_error.png'))
 
         if self._is_playing:
             self._root.after(1, self._update)
@@ -129,10 +135,11 @@ class AppWindow(object):
             button.grid(row=config[4][0], column=config[4][1])
             self._buttons[config[0]] = button
 
-        tk.Label(
+        self._status_icon = tk.Label(
             self._root,
             image=self._get_image('ui_status_ok.png'),
-            ).grid(row=0, column=8)
+            )
+        self._status_icon.grid(row=0, column=8)
 
         tk.Label(
             self._root,
@@ -212,8 +219,4 @@ class AppWindow(object):
         pass
 
     def _set_time(self, value):
-        self._time = value
-        self._time_label.config(text=str(self._time))
-
-    def _update_time(self, delta):
-        self._set_time(self._time + delta)
+        self._time_label.config(text=str(value))

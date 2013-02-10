@@ -1,5 +1,6 @@
 
 import xml.etree.ElementTree as ET
+from datetime import timedelta
 from math import sqrt
 from geometry import Pose2D, Surface2D
 import applications
@@ -117,7 +118,6 @@ class Physics(object):
                     
                     if ir_bounds.precheck_surface(obstacle_bounds):
                         d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, obstacle_bounds, d_min)
-                        print "d1", d_min
 
                 # check against other robots
                 for other_robot in self._world.robots:
@@ -128,10 +128,8 @@ class Physics(object):
                     
                     if ir_bounds.precheck_surface(other_robot_bounds):
                         d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, other_robot_bounds, d_min)
-                        print "d2", d_min
                 
                 if d_min < ir_sensor.max_range:
-                    print "update", d_min
                     ir_sensor.update_range(d_min)
 
     def _update_proximity_sensor(self, sensor, sensor_bounds, obstacle_bounds, d_min):
@@ -148,8 +146,10 @@ class Physics(object):
 class Simulator(object):
     def __init__(self, world, time_step):
         self._time_step = time_step
+        self.time = timedelta(0)
         self._world = world
         self._physics = Physics(world)
+        self.has_crashed = False
 
     def step(self):
         for controller in self._world.controllers:
@@ -160,4 +160,6 @@ class Simulator(object):
 
         self._world.application.run(self._time_step)
 
-        self._physics.apply_physics()
+        self.has_crashed = self.has_crashed or self._physics.apply_physics()
+
+        self.time += self._time_step
