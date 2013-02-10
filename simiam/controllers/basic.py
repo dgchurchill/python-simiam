@@ -1,5 +1,5 @@
 
-from math import radians, atan2, cos, sin, sqrt
+from math import radians, atan2, cos, sin, sqrt, log
 from ..geometry import Pose2D
 
 class Controller(object):
@@ -51,7 +51,7 @@ class AvoidObstacles(Controller):
 #             fprintf('(v,w) = (%0.4g,%0.4g)\n', v,w);
             
         # Transform from v,w to v_r,v_l and set the speed of the robot
-#             [vel_r, vel_l] = obj.uni_to_diff(robot,v,w);
+#             [vel_r, vel_l] = self._uni_to_diff(robot,v,w);
 #             robot.set_speed(vel_r, vel_l);
 
         return {
@@ -129,3 +129,111 @@ class GoToGoal(Controller):
 class AOAndGTG(Controller):
     def __init__(self):
         Controller.__init__(self, 'ao_and_gtg')
+
+        self._sensor_poses = [Pose2D(theta=radians(x)) for x in [128, 75, 42, 13, -13, -42, -75, -128, 180]]
+
+        # initialize memory banks
+        self._Kp = 10
+        self._Ki = 0
+        self._Kd = 0
+        
+        self._E_k = 0
+        self._e_k_1 = 0
+
+
+    def execute(self, robot, state_estimate, time_delta, **inputs):
+        # Set the goal location
+        x_g = inputs['x_g']
+        y_g = inputs['y_g']
+        
+        d_c = inputs['d_c']
+        d_s = inputs['d_s']
+        
+        v = inputs['v']
+        
+        # Update the odometry
+        d_obs, theta_obs = self._closest_obstacle(robot, state_estimate)
+            
+        # Avoid obstacle controller
+        
+        # Compute the heading theta_d_ao that steers
+        # the robot away from the obstacles
+        
+        theta_d_ao = theta_obs
+        theta_d_ao = atan2(sin(theta_d_ao), cos(theta_d_ao))
+        
+        # Compute the heading theta_d_gtg that steers
+        # the robot towards the goal
+        
+        dx = x_g - state_estimate.x
+        dy = y_g - state_estimate.y
+        theta_d_gtg = atan2(dy, dx) # Hint: x_g, and y_g can be useful here.
+        
+        # Blend the two heading vectors
+                    
+        if d_obs >= d_s:
+            alpha = 0
+        elif d_obs <= d_c:
+            alpha = 1
+        else:
+            m = -1 / (d_s - d_c)
+            b = 1 - m * d_c
+            alpha = m * d_obs + b
+                    
+        theta_d = alpha * theta_d_ao + (1 - alpha) * theta_d_gtg
+        
+        # Compute the control
+        
+        # heading error
+        e_k = theta_d - state_estimate.theta
+        e_k = atan2(sin(e_k), cos(e_k))
+        
+        # PID for heading
+        dt = time_delta.total_seconds()
+        w = self._Kp * e_k + self._Ki * (self._E_k + e_k * dt) + self._Kd * (e_k - self._e_k_1) / dt
+        
+        # save errors
+        self._E_k += e_k * dt
+        self._e_k_1 = e_k
+        
+        return {
+            'v': v,
+            'w': w
+        }
+
+    def _closest_obstacle(self, robot, state_estimate):    
+        # Interpret the IR sensor measurements geometrically
+        
+        ir_values = [max(x.get_range(), 18) for x in robot.ir_sensors]
+
+        raw_to_distance = lambda raw: (log(raw / 3960) / -30) + 0.02
+
+        ir_vectors = [[raw_to_distance(x), 0] for x in ir_values]
+
+        # make sure that the rear IRs are ignored.
+        for i in [0, 7, 8]:
+            ir_vectors[i][0] = 0.3
+
+
+        ir_vectors = [v for x in zip(self._sensor_poses, ir_vectors) for v in x[0].transform([x[1]])]
+        ir_vectors = Pose2D(theta=state_estimate.theta).transform(ir_vectors)
+        
+        # Compute the vector to the closest obstacle
+        
+        dists = [sqrt(x[0] ** 2 + x[1] ** 2) for x in ir_vectors]
+
+        i, m = min(enumerate(dists), key=lambda x: x[1])
+
+        d_obs = m
+        # Compute the heading vector
+        
+#             gains = -[0 1 1 1 1 1 1 0 0];
+        gains = [2 * x for x in [0, 1, 4, 5, 5, 4, 1, 0, 0]]
+        
+        g_vectors = map(lambda g, x: [g * x[0], g * x[1]], gains, ir_vectors)
+        u = [sum(x) for x in zip(*g_vectors)]
+        
+        theta_obs = atan2(u[1], u[0])
+
+#             fprintf('closest obstacle: %0.3g,%0.3g\n', d_obs, simiam.ui.Pose2D.rad2deg(theta_obs));
+        return (d_obs, theta_obs)

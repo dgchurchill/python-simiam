@@ -1,5 +1,5 @@
 
-from math import radians, floor
+from math import radians, floor, ceil, exp
 from robot import Robot
 from sensor import WheelEncoder, ProximitySensor
 from dynamics import DifferentialDrive

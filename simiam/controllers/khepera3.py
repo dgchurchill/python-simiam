@@ -13,7 +13,7 @@ class K3Supervisor(Supervisor):
             AOAndGTG()
         ]
 
-        self._current_controller = self._controllers[1]
+        self._current_controller = self._controllers[2]
 
         self._prev_ticks = {
             'left': 0,
