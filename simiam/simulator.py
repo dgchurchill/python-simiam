@@ -117,6 +117,7 @@ class Physics(object):
                     
                     if ir_bounds.precheck_surface(obstacle_bounds):
                         d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, obstacle_bounds, d_min)
+                        print "d1", d_min
 
                 # check against other robots
                 for other_robot in self._world.robots:
@@ -127,19 +128,21 @@ class Physics(object):
                     
                     if ir_bounds.precheck_surface(other_robot_bounds):
                         d_min = self._update_proximity_sensor(ir_sensor, ir_bounds, other_robot_bounds, d_min)
+                        print "d2", d_min
                 
                 if d_min < ir_sensor.max_range:
+                    print "update", d_min
                     ir_sensor.update_range(d_min)
 
     def _update_proximity_sensor(self, sensor, sensor_bounds, obstacle_bounds, d_min):
         points = sensor_bounds.intersection_with_surface(obstacle_bounds)
         for point in points:
 #            d = norm(pt-sensor_surface.geometry_(1,1:2));
-            d = sqrt((point(0) - sensor_bounds.geometry[0][0]) ** 2 + (point[1] - sensor_bounds.geometry[0][1]) ** 2)
+            d = sqrt((point[0] - sensor_bounds.geometry[0][0]) ** 2 + (point[1] - sensor_bounds.geometry[0][1]) ** 2)
             d = sensor.limit_to_sensor(d)
             if d < d_min:
                 d_min = d
-            return d_min
+        return d_min
 
 
 class Simulator(object):

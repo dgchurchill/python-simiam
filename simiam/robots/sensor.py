@@ -24,8 +24,9 @@ class WheelEncoder(object):
 
 
 class ProximitySensor(object):
-    def __init__(self, sensor_type, pose, r_min, r_max, phi, distance_to_raw=lambda x: x):
+    def __init__(self, sensor_type, parent, pose, r_min, r_max, phi, distance_to_raw=lambda x: x):
         self._type = sensor_type
+        self._parent = parent
         self._location = pose
 
         self._range = r_max
@@ -37,10 +38,12 @@ class ProximitySensor(object):
         self._distance_to_raw = distance_to_raw
 
     def get_bounds(self):
+        parent_pose = self._parent.get_pose()
+
         r = self._range
         r1 = r * tan(self._spread / 4)
         r2 = r * tan(self._spread / 2)
-        return Surface2D(self._location, [
+        cone = Surface2D(self._location, [
             (0, 0),
             (sqrt(r ** 2 - r2 ** 2), r2),
             (sqrt(r ** 2 - r1 ** 2), r1),
@@ -48,6 +51,8 @@ class ProximitySensor(object):
             (sqrt(r ** 2 - r1 ** 2), -r1),
             (sqrt(r ** 2 - r2 ** 2), -r2)
         ])
+
+        return Surface2D(self._parent.get_pose(), cone.geometry)
 
     def get_surfaces(self):
         # if (distance < self.max_range)
@@ -63,10 +68,10 @@ class ProximitySensor(object):
         ]
 
     def update_range(self, distance):
-        self._range = self._limit_to_sensor(distance)
+        self._range = self.limit_to_sensor(distance)
         
     def get_range(self):
         return self._distance_to_raw(self._range)
 
-    def _limit_to_sensor(self, distance):
+    def limit_to_sensor(self, distance):
         return min(max(distance, self._min_range), self.max_range)

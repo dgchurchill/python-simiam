@@ -40,6 +40,7 @@ class Khepera3(Robot):
         self.ir_sensors = [
             ProximitySensor(
                 'IR',
+                self,
                 Pose2D(x[0], x[1], radians(x[2])),
                 0.02,
                 0.2,
@@ -64,6 +65,9 @@ class Khepera3(Robot):
             ( 0.052,   0.021),
             ( 0.033,   0.043)
         ])
+
+    def get_pose(self):
+        return self._pose
 
     def get_surfaces(self):
         # Khepera3 in top-down 2D view
@@ -95,7 +99,7 @@ class Khepera3(Robot):
         return [
             (k3_base, '#cccccc'),
             (k3_top_plate, '#000000')
-        ]
+        ] + [y for x in self.ir_sensors for y in x.get_surfaces()]
 
     def execute(self, time_delta):
         sf = self._speed_factor

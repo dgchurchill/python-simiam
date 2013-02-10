@@ -24,26 +24,28 @@ class AppWindow(object):
     def _create_simulator(self):
         world = World()
         world.build_from_file('settings.xml')
-
-        for obstacle in world.obstacles:
-            self._view.create_polygon(obstacle.geometry, fill='#ff6666')
-
-        self._view.scale(tk.ALL, 0, 0, 200, 200)
-        self._view.config(scrollregion=self._view.bbox(tk.ALL))
-        self._view.xview_moveto(0.5)
-        self._view.yview_moveto(0.5)
-
-        self._view.tag_bind('robot', '<Button-1>', self._focus_view)
-
         self._simulator = Simulator(world, timedelta(milliseconds=10))
 
     def _update(self):
         self._simulator.step()
 
+        self._view.delete(tk.ALL)
+
+        for obstacle in self._simulator._world.obstacles:
+            self._view.create_polygon(obstacle.geometry, fill='#ff6666')
+
         for robot in self._simulator._world.robots:
             for surface in robot.get_surfaces():
-                scaled_geom = [(200*x[0], 200*x[1]) for x in surface[0].geometry]
-                self._view.create_polygon(scaled_geom, fill=surface[1])
+                self._view.create_polygon(surface[0].geometry, fill=surface[1])
+
+        self._view.tag_bind('robot', '<Button-1>', self._focus_view)
+
+        self._view.scale(tk.ALL, 0, 0, 200, 200)
+        self._view.config(scrollregion=self._view.bbox(tk.ALL))
+
+        # TODO: Fix scrolling
+        self._view.xview_moveto(0.5)
+        self._view.yview_moveto(0.5)
 
         if self._is_playing:
             self._root.after(1, self._update)

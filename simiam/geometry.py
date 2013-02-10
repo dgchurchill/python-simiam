@@ -38,53 +38,30 @@ class Surface2D(object):
         return d < (self._geometric_span + surface._geometric_span) / sqrt(3)
 
     def intersection_with_surface(self, other):
-        a = self._edge_set
-        b = other._edge_set
-
-        n_a = len(a)
-        n_b = len(b)
-
-        m_x_1 = [x[0][0] for x in a]
-        m_x_2 = [x[1][0] for x in a]
-        m_x_3 = [x[0][0] for x in b]
-        m_x_4 = [x[1][0] for x in b]
-
-        m_y_1 = [x[0][1] for x in a]
-        m_y_2 = [x[1][1] for x in a]
-        m_y_3 = [x[0][1] for x in b]
-        m_y_4 = [x[1][1] for x in b]
-
-        m_y_13 = [operator.sub(*x) for x in zip(m_y_1, m_y_3)]
-        m_x_13 = [operator.sub(*x) for x in zip(m_x_1, m_x_3)]
-        m_x_21 = [operator.sub(*x) for x in zip(m_x_2, m_x_1)]
-        m_y_21 = [operator.sub(*x) for x in zip(m_y_2, m_y_1)]
-        m_x_43 = [operator.sub(*x) for x in zip(m_x_4, m_x_3)]
-        m_y_43 = [operator.sub(*x) for x in zip(m_y_4, m_y_3)]
-   
-        a1 = [operator.mul(*x) for x in zip(m_x_43, m_y_13)]
-        a2 = [operator.mul(*x) for x in zip(m_y_43, m_x_13)]
-        n_edge_a = [operator.sub(*x) for x in zip(a1, a2)]
-   
-        b1 = [operator.mul(*x) for x in zip(m_x_21, m_y_13)]
-        b2 = [operator.mul(*x) for x in zip(m_y_21, m_x_13)]
-        n_edge_b = [operator.sub(*x) for x in zip(b1, b2)]
-   
-        ab1 = [operator.mul(*x) for x in zip(m_y_43, m_x_21)]
-        ab2 = [operator.mul(*x) for x in zip(m_x_43, m_y_21)]
-        d_edge_ab = [operator.sub(*x) for x in zip(ab1, ab2)]
-
-        u_a = [operator.div(*x) for x in zip(n_edge_a, d_edge_ab)]
-        u_b = [operator.div(*x) for x in zip(n_edge_b, d_edge_ab)]
-        
-        ix_1 = [operator.mul(*x) for x in zip(m_x_21, u_a)]        
-        intersect_set_x = [operator.add(*x) for x in zip(m_x_1, ix_1)]
-
-        iy_1 = [operator.mul(*x) for x in zip(m_y_21, u_a)]        
-        intersect_set_y = [operator.add(*x) for x in zip(m_y_1, iy_1)]
-
         points = []
-        for i in range(len(u_a)):
-            if u_a[i] >= 0 and u_a[i] <= 1 and u_b[i] >= 0 and u_b[i] <= 1:
-                points.append((intersect_set_x[i], intersect_set_y[i]))
+
+        for edge_a in self._edge_set:
+            for edge_b in other._edge_set:
+                x_13 = edge_a[0][0] - edge_b[0][0]
+                y_13 = edge_a[0][1] - edge_b[0][1]
+
+                x_21 = edge_a[1][0] - edge_a[0][0]
+                y_21 = edge_a[1][1] - edge_a[0][1]
+
+                x_43 = edge_b[1][0] - edge_b[0][0]
+                y_43 = edge_b[1][1] - edge_b[0][1]
+
+                n_edge_a = x_43 * y_13 - y_43 * x_13
+                n_edge_b = x_21 * y_13 - y_21 * x_13
+                d_edge_ab = y_43 * x_21 - x_43 * y_21
+
+                if d_edge_ab == 0:
+                    continue
+
+                u_a = n_edge_a / d_edge_ab
+                u_b = n_edge_b / d_edge_ab
+
+                if u_a >= 0 and u_a <= 1 and u_b >= 0 and u_b <= 1:
+                    points.append((edge_a[0][0] + x_21 * u_a, edge_a[0][1] + y_21 * u_a))
 
         return points

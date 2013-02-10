@@ -5,7 +5,7 @@ class DemoApp(object):
     def __init__(self):
         self._controllers = []
         self._time = timedelta(0)
-        self._timeout = timedelta(seconds=5)
+        self._timeout = timedelta(seconds=1)
 
     def add_controller(self, controller):
         self._controllers.append(controller)
