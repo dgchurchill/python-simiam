@@ -108,9 +108,9 @@ class Physics(object):
     def _proximity_sensor_detection(self):
         for robot in self._world.robots:
             for ir_sensor in robot.ir_sensors:
-                ir_bounds = ir_sensor.get_bounds()
                 d_min = ir_sensor.max_range
                 ir_sensor.update_range(d_min)
+                ir_bounds = ir_sensor.get_bounds()
 
                 # check against obstacles
                 for obstacle in self._world.obstacles:
