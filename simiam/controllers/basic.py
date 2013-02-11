@@ -14,19 +14,19 @@ class AvoidObstacles(Controller):
         self._sensor_poses = [Pose2D(theta=radians(x)) for x in [128, 75, 42, 13, -13, -42, -75, -128, 180]]
 
     def _sensor_to_distance(self, raw):
-        return [(log(x / 3960) / -30) + 0.02 for x in raw]
+        return (log(raw / 3960) / -30) + 0.02
 
     def execute(self, robot, state_estimate, time_delta, **inputs):
         # Poll the current IR sensor values 1-9
-        ir_array_values = [max(x, 18) for x in robot.ir_array.get_range()]
+        ir_values = [max(x.get_range(), 18) for x in robot.ir_sensors]
             
         # Interpret the IR sensor measurements geometrically
-        def raw_to_vector(pose, raw):
-            return pose.transform([(self._sensor_to_distance(raw), 0)])
-
-        ir_vectors = map(raw_to_vector, self._sensor_poses, ir_array_values)
-        robot_orientation = Pose2D(theta=state_estimate.theta)
-        ir_vectors = robot_orientation.transform(ir_vectors)
+        ir_vectors = [[self._sensor_to_distance(x), 0] for x in ir_values]
+        ir_vectors = [v for x in zip(self._sensor_poses, ir_vectors) for v in x[0].transform([x[1]])]
+        ir_vectors = Pose2D(theta=state_estimate.theta).transform(ir_vectors)
+        
+        # Compute the vector to the closest obstacle        
+        dists = [sqrt(x[0] ** 2 + x[1] ** 2) for x in ir_vectors]
 
         # Compute the heading vector
         gains = [2 * x for x in [0, 1, 4, 5, 5, 4, 1, 0, 0]]
@@ -43,8 +43,8 @@ class AvoidObstacles(Controller):
         k_v =  0.025
         k_w = 1.75
             
-        v = k_v * norm_u * cos(theta_d - theta)
-        w = k_w * norm_u * sin(theta_d - theta)
+        v = k_v * norm_u * cos(theta_d - state_estimate.theta)
+        w = k_w * norm_u * sin(theta_d - state_estimate.theta)
         
         v = inputs['v']
             
@@ -213,7 +213,6 @@ class AOAndGTG(Controller):
         # make sure that the rear IRs are ignored.
         for i in [0, 7, 8]:
             ir_vectors[i][0] = 0.3
-
 
         ir_vectors = [v for x in zip(self._sensor_poses, ir_vectors) for v in x[0].transform([x[1]])]
         ir_vectors = Pose2D(theta=state_estimate.theta).transform(ir_vectors)

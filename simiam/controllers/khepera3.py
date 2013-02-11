@@ -13,7 +13,7 @@ class K3Supervisor(Supervisor):
             AOAndGTG()
         ]
 
-        self._current_controller = self._controllers[2]
+        self.set_current_controller(2)
 
         self._prev_ticks = {
             'left': 0,
@@ -22,6 +22,9 @@ class K3Supervisor(Supervisor):
 
         self.goal = (0, 0)
         self.reached_goal = False
+
+    def set_current_controller(self, controller_id):
+        self._current_controller = self._controllers[controller_id]
 
     def execute(self, time_delta):
         """

@@ -25,6 +25,7 @@ class AppWindow(object):
         world = World()
         world.build_from_file('settings.xml')
         self._simulator = Simulator(world, timedelta(milliseconds=10))
+        self._target = None
 
     def _render(self):
         self._view.delete(tk.ALL)
@@ -35,6 +36,16 @@ class AppWindow(object):
         for robot in self._simulator._world.robots:
             for surface in robot.get_surfaces():
                 self._view.create_polygon(surface[0].geometry, fill=surface[1])
+
+        if self._target is not None:
+            size = 0.03
+            bbox = [
+                self._target[0] - size / 2,
+                self._target[1] - size / 2,
+                self._target[0] + size / 2,
+                self._target[1] + size / 2
+            ]
+            self._view.create_oval(bbox, fill='green')
 
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
@@ -116,6 +127,7 @@ class AppWindow(object):
         # set(obj.logo_, 'BackgroundColor', [96 184 206]/255);
 
         self._view = tk.Canvas(self._root, borderwidth=1, background='white')
+        self._view.bind('<Button-1>', self._set_target)
         self._view.grid(row=1, column=0, rowspan=2, columnspan=11, sticky='wens')
 
         button_config = [
@@ -152,6 +164,10 @@ class AppWindow(object):
         self._time_label.grid(row=0, column=10)
         self._set_time(timedelta(0))
 
+        self._create_simulator()
+            
+        self._render()
+
 
     def _on_start(self):
                           
@@ -181,14 +197,11 @@ class AppWindow(object):
                         
 #             obj.create_callbacks();
 
-        self._create_simulator()
-            
         self._is_playing = True
         self._buttons['play'].config(
             image=self._get_image('ui_control_pause.png'),
             command=self._on_play)
             
-#             obj.is_ready_ = true;
         self._buttons['home'].config(state=tk.NORMAL)
         self._buttons['zoom_in'].config(state=tk.NORMAL)
         self._buttons['zoom_out'].config(state=tk.NORMAL)
@@ -217,6 +230,14 @@ class AppWindow(object):
 
     def _on_zoom_out(self):
         self._zoom /= 1.25
+        self._render()
+
+    def _set_target(self, event):
+        view = event.widget
+        x = view.canvasx(event.x) / self._zoom
+        y = view.canvasy(event.y) / self._zoom
+        self._target = (x, y)
+        self._simulator._world.application.set_goal(self._target)
         self._render()
 
     def _focus_view(self):
