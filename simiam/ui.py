@@ -226,9 +226,7 @@ class AppWindow(object):
     def _scroll_to(self, x_fraction, y_fraction):
         x_fraction = max(-1.0, min(1.0, x_fraction))
         y_fraction = max(-1.0, min(1.0, y_fraction))
-
         self._scroll_thumb = (x_fraction, y_fraction)
-        print (x_fraction, y_fraction)
         self._view.xview_moveto(x_fraction)
         self._view.yview_moveto(y_fraction)
         self._render()
@@ -245,7 +243,6 @@ class AppWindow(object):
         self._dragging = True
         new_position = event.widget.canvasx(event.x), event.widget.canvasy(event.y)
         change = (self._drag_start[0] - new_position[0], self._drag_start[1] - new_position[1])
-        print change
         width = self._bounds[2] - self._bounds[0]
         height = self._bounds[3] - self._bounds[1]
         self._scroll_to(self._scroll_thumb[0] + change[0] / width, self._scroll_thumb[1] + change[1] / height)
