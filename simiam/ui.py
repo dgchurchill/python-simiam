@@ -30,6 +30,8 @@ class AppWindow(object):
     def _render(self):
         self._view.delete(tk.ALL)
 
+        # TODO: Grid lines
+
         for obstacle in self._simulator._world.obstacles:
             self._view.create_polygon(obstacle.geometry, fill='#ff6666')
 
@@ -50,11 +52,10 @@ class AppWindow(object):
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
         self._view.scale(tk.ALL, 0, 0, self._zoom, self._zoom)
-        self._view.config(scrollregion=self._view.bbox(tk.ALL))
 
-        # TODO: Fix scrolling
-        self._view.xview_moveto(0.5)
-        self._view.yview_moveto(0.5)
+        if self._bounds is None:
+            self._update_bounds()
+            self._scroll_to(0.0, 0.0)
 
     def _update(self):
         self._simulator.step()
@@ -73,6 +74,7 @@ class AppWindow(object):
         self._root.title('Sim.I.am')
         self._root.geometry('800x800')
         self._zoom = 200
+        self._bounds = None
 
         rows = [
             { 'minsize': 24 },
@@ -127,15 +129,17 @@ class AppWindow(object):
         # set(obj.logo_, 'BackgroundColor', [96 184 206]/255);
 
         self._view = tk.Canvas(self._root, borderwidth=1, background='white')
-        self._view.bind('<Button-1>', self._set_target)
+        self._view.bind('<Button-1>', self._mouse_down)
+        self._view.bind('<ButtonRelease-1>', self._mouse_up)
+        self._view.bind('<B1-Motion>', self._mouse_move)
         self._view.grid(row=1, column=0, rowspan=2, columnspan=11, sticky='wens')
 
         button_config = [
             ('play', self._on_start, 'ui_control_play.png', tk.NORMAL, (3, 5)),
             ('reset', self._on_reset, 'ui_control_reset.png', tk.DISABLED, (3, 4)),
             ('home', self._on_home, 'ui_control_home.png', tk.DISABLED, (3, 0)),
-            ('zoom_in', self._on_zoom_in, 'ui_control_zoom_in.png', tk.DISABLED, (3, 10)),
-            ('zoom_out', self._on_zoom_out, 'ui_control_zoom_out.png', tk.DISABLED, (3, 9))
+            ('zoom_in', self._on_zoom_in, 'ui_control_zoom_in.png', tk.NORMAL, (3, 10)),
+            ('zoom_out', self._on_zoom_out, 'ui_control_zoom_out.png', tk.NORMAL, (3, 9))
         ]
 
         self._buttons = {}
@@ -168,43 +172,13 @@ class AppWindow(object):
             
         self._render()
 
-
     def _on_start(self):
-                          
-#             % Target Marker
-#             obj.target_marker_ = plot(obj.view_, inf, inf, ...
-#                 'Marker', 'o', ...
-#                 'MarkerFaceColor', obj.ui_colors_.green, ...
-#                 'MarkerEdgeColor', obj.ui_colors_.green, ...
-#                 'MarkerSize', 10);
-            
-#             set(obj.view_, 'XGrid', 'on');
-#             set(obj.view_, 'YGrid', 'on');
-#             set(obj.view_, 'XTickMode', 'manual');
-#             set(obj.view_, 'YTickMode', 'manual');
-#             set(obj.view_, 'Units', 'pixels');
-#             view_quad = get(obj.view_, 'Position');
-#             set(obj.view_, 'Units', 'normal');
-            
-#             width = view_quad(3); 
-#             height = view_quad(4);
-            
-#             obj.ratio_ = width/height;          
-#             obj.zoom_level_ = 1;
-#             obj.boundary_ = 2.5;
-            
-#             obj.ui_set_axes();
-                        
-#             obj.create_callbacks();
-
         self._is_playing = True
         self._buttons['play'].config(
             image=self._get_image('ui_control_pause.png'),
             command=self._on_play)
             
         self._buttons['home'].config(state=tk.NORMAL)
-        self._buttons['zoom_in'].config(state=tk.NORMAL)
-        self._buttons['zoom_out'].config(state=tk.NORMAL)
 
         self._set_time(timedelta(0))
 
@@ -224,24 +198,65 @@ class AppWindow(object):
     def _on_home(self):
         pass
 
+    def _update_bounds(self):
+        self._bounds = self._view.bbox(tk.ALL)
+        self._view.config(scrollregion=self._bounds)
+
     def _on_zoom_in(self):
         self._zoom *= 1.25
         self._render()
+        self._update_bounds()
 
     def _on_zoom_out(self):
         self._zoom /= 1.25
         self._render()
+        self._update_bounds()
 
-    def _set_target(self, event):
+    def _get_world_coords(self, event):
         view = event.widget
         x = view.canvasx(event.x) / self._zoom
         y = view.canvasy(event.y) / self._zoom
-        self._target = (x, y)
+        return (x, y)
+
+    def _set_target(self, event):
+        self._target = self._get_world_coords(event)
         self._simulator._world.application.set_goal(self._target)
         self._render()
+
+    def _scroll_to(self, x_fraction, y_fraction):
+        x_fraction = max(-1.0, min(1.0, x_fraction))
+        y_fraction = max(-1.0, min(1.0, y_fraction))
+
+        self._scroll_thumb = (x_fraction, y_fraction)
+        print (x_fraction, y_fraction)
+        self._view.xview_moveto(x_fraction)
+        self._view.yview_moveto(y_fraction)
+        self._render()
+
+    def _mouse_down(self, event):
+        self._dragging = False
+        self._drag_start = (event.widget.canvasx(event.x), event.widget.canvasy(event.y))
+
+    def _mouse_up(self, event):
+        if not self._dragging:
+            self._set_target(event)
+
+    def _mouse_move(self, event):
+        self._dragging = True
+        new_position = event.widget.canvasx(event.x), event.widget.canvasy(event.y)
+        change = (self._drag_start[0] - new_position[0], self._drag_start[1] - new_position[1])
+        print change
+        width = self._bounds[2] - self._bounds[0]
+        height = self._bounds[3] - self._bounds[1]
+        self._scroll_to(self._scroll_thumb[0] + change[0] / width, self._scroll_thumb[1] + change[1] / height)
+        self._drag_start = event.widget.canvasx(event.x), event.widget.canvasy(event.y)
 
     def _focus_view(self):
         pass
 
     def _set_time(self, value):
-        self._time_label.config(text=str(value))
+        time = int(value.total_seconds() * 1000)
+        r, ms = divmod(time, 1000)
+        r, seconds = divmod(r, 60)
+        hours, minutes = divmod(r, 60)
+        self._time_label.config(text='{:02}:{:02}:{:02}.{:03}'.format(hours, minutes, seconds, ms))
