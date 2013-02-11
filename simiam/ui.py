@@ -26,11 +26,7 @@ class AppWindow(object):
         world.build_from_file('settings.xml')
         self._simulator = Simulator(world, timedelta(milliseconds=10))
 
-    def _update(self):
-        self._simulator.step()
-
-        self._set_time(self._simulator.time)
-
+    def _render(self):
         self._view.delete(tk.ALL)
 
         for obstacle in self._simulator._world.obstacles:
@@ -42,12 +38,17 @@ class AppWindow(object):
 
         self._view.tag_bind('robot', '<Button-1>', self._focus_view)
 
-        self._view.scale(tk.ALL, 0, 0, 200, 200)
+        self._view.scale(tk.ALL, 0, 0, self._zoom, self._zoom)
         self._view.config(scrollregion=self._view.bbox(tk.ALL))
 
         # TODO: Fix scrolling
         self._view.xview_moveto(0.5)
         self._view.yview_moveto(0.5)
+
+    def _update(self):
+        self._simulator.step()
+        self._set_time(self._simulator.time)
+        self._render()
 
         if self._simulator.has_crashed:
             self._is_playing = False
@@ -60,6 +61,7 @@ class AppWindow(object):
         self._root = tk.Tk()
         self._root.title('Sim.I.am')
         self._root.geometry('800x800')
+        self._zoom = 200
 
         rows = [
             { 'minsize': 24 },
@@ -210,10 +212,12 @@ class AppWindow(object):
         pass
 
     def _on_zoom_in(self):
-        pass
+        self._zoom *= 1.25
+        self._render()
 
     def _on_zoom_out(self):
-        pass
+        self._zoom /= 1.25
+        self._render()
 
     def _focus_view(self):
         pass
